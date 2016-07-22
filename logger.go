@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 	"unicode"
+	"github.com/Sirupsen/logrus"
 )
 
 var (
@@ -44,7 +45,6 @@ func (logger Logger) Print(values ...interface{}) {
 			// sql
 			var sql string
 			var formattedValues []string
-
 			for _, value := range values[4].([]interface{}) {
 				indirectValue := reflect.Indirect(reflect.ValueOf(value))
 				if indirectValue.IsValid() {
@@ -78,14 +78,18 @@ func (logger Logger) Print(values ...interface{}) {
 					sql += formattedValues[index]
 				}
 			}
-
 			messages = append(messages, sql)
+			logrus.WithFields(logrus.Fields{
+				"duration": float64(values[2].(time.Duration).Nanoseconds()/1e4)/100.0,
+				"query": sql,
+				"sourceFile": values[1],
+			}).Debug("Executed SQL Query")
 		} else {
 			messages = append(messages, "\033[31;1m")
 			messages = append(messages, values[2:]...)
 			messages = append(messages, "\033[0m")
+			logrus.Error(values[2:]...)
 		}
-		logger.Println(messages...)
 	}
 }
 
